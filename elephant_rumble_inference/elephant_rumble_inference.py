@@ -1,8 +1,7 @@
-from . import aves_torchaudio_wrapper
-
+from . aves_torchaudio_wrapper import AvesTorchaudioWrapper
 
 def main():
-  atw = aves_torchaudio_wrapper.AvesTorchaudioWrapper()
+  atw = AvesTorchaudioWrapper()
   print("Hello world!")
 
 if __name__ == "__main__":
