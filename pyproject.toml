@@ -14,5 +14,5 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-elephant-rumble-inference = "elephant_rumble_inference.elephant_rumble_inference:main"
+elephant-rumble-inference = "elephant_rumble_inference.main:main"
 
