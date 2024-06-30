@@ -21,6 +21,7 @@ class AvesTorchaudioWrapper(torch.nn.Module):
         self.model = wav2vec2_model(**self.config, aux_num_out=None)
         self.model.load_state_dict(torch.load(weights_path))
         self.model.feature_extractor.requires_grad_(False)
+        self.eval()
 
     def load_config(self, config_path):
         with open(config_path, "r") as ff:
