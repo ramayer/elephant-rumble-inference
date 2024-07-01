@@ -29,7 +29,7 @@ class AudioFileProcessor:
             )  # remove that batch dimension
             return reshaped_tensor.to("cpu").detach()
 
-    def classify_wave_file_for_rumbles(self, wav_file_path):
+    def classify_wave_file_for_rumbles(self, wav_file_path, limit_audio_hours=24 ):
         streamer = tai.StreamReader(wav_file_path)
         streamer.add_basic_audio_stream(
             stream_index=0,
@@ -44,6 +44,6 @@ class AudioFileProcessor:
                     aves_embeddings = self.get_aves_embeddings(chunk)
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
                     results.append(rumble_classification)
-                    if idx > 1:  # for unit testing
+                    if idx+1 >= limit_audio_hours:  # for unit testing
                         break
         return torch.cat(results)

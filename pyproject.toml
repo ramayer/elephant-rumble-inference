@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elephant-rumble-inference"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Ron M <ramayer+git@gmail.com>"]
 readme = "README.md"

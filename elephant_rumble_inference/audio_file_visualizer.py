@@ -1,6 +1,7 @@
-
+import dataclasses
 import librosa
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import numpy as np
 import torch.nn.functional
 from . import audio_file_processor as afp
@@ -9,16 +10,41 @@ class AudioFileVisualizer:
     def __init__(self):
         pass
 
-
     def interpolate_and_scale_1D_tensor(self, input_tensor, target_length):
         # kinda crazy, but:
         # https://stackoverflow.com/questions/73928655/resizing-a-vector-by-interpolation
-        z=input_tensor[None,None,:]
+        z = input_tensor[None,None,:]
         z2 = torch.nn.functional.interpolate(z,target_length)[0][0]
-        z2 -= np.min(z2.numpy())
-        z2 /= np.max(z2.numpy())
+        #z2 -= np.min(z2.numpy())
+        #z2 /= np.max(z2.numpy())
         return z2
     
+    def make_similarity_discrete(self, similarity, dissimilarity):
+        sim = similarity - dissimilarity
+        sim /= sim.abs().max()
+        g4 = sim * 0
+        r4 = sim * 0
+        g4[sim > -0.05] = 1 # Note this threshold can depend on each training run of the model.
+        r4[sim <  0.05] = 1 # the loss function only cares which is greater, not by how much.
+        g4[sim > 0] = 1
+        r4[sim < 0] = 1
+        return (g4,r4)
+    
+
+    def add_annotation_boxes(self,labels,patch_start,patch_end,axarr,offset=0.2,only=None,color=(0.0, 1.0, 1.0)):
+        for row in labels:
+            bt,et,lf,hf,dur,fn,tags,notes,tag1,tag2,score,raven_file = dataclasses.astuple(row)
+            if et < patch_start:
+                continue
+            if bt > patch_end:
+                continue
+            if only is not None and only != bt:
+                continue
+            rect = patches.Rectangle((bt - patch_start -offset, lf-5), (et-bt+offset*2), (hf-lf+10), linewidth=3, edgecolor=(0,0,0), facecolor='none')
+            axarr.add_patch(rect)
+            rect = patches.Rectangle((bt - patch_start -offset, lf-5), (et-bt+offset*2), (hf-lf+10), linewidth=1, edgecolor=color, facecolor='none')
+            axarr.add_patch(rect)
+
     
     def visualize_audio_file_fragment(self,
                           title,
@@ -31,6 +57,8 @@ class AudioFileVisualizer:
                           end_time=60*6,
                           height=8,
                           width=24,
+                          make_discrete=False,
+                          labels=[]
                           ):
         
         start_index = audio_file_processor.time_to_score_index(start_time)
@@ -78,6 +106,10 @@ class AudioFileVisualizer:
         stretched_similarity = self.interpolate_and_scale_1D_tensor(similarity,spec.shape[1])
         stretched_dissimilarity = self.interpolate_and_scale_1D_tensor(dissimilarity,spec.shape[1])
 
+        if make_discrete:
+             s,d = self.make_similarity_discrete(stretched_similarity,stretched_dissimilarity)
+             stretched_similarity,stretched_dissimilarity = s,d
+
         ## An overcomplex color map
         nearness = stretched_similarity.numpy()
         #nearness[nearness<0] = 0
@@ -118,6 +150,7 @@ class AudioFileVisualizer:
         # local_rfw.add_annotation_boxes(labels,start_time,duration,ax1,offset=.5,color=(0,1,0))
         # negative_lables = local_rfw.get_negative_labels(labels)
         # local_rfw.add_annotation_boxes(negative_lables,start_time,duration,ax1,offset=.5,color=(1,0,0))
+        self.add_annotation_boxes(labels,start_time,end_time,ax1,offset=0.5,color=(0,0,1))
 
 
         #print("make sure similarity shape is compatible",s_db_rgb.shape, stretched_similarity.shape)
@@ -132,10 +165,14 @@ class AudioFileVisualizer:
         hour,minute,second = int(start_time//60//60),int(start_time//60)%60,start_time%60
         displaytime = f"{hour:02}:{minute:02}"
 
+
+
         fig.suptitle(f"{title}", fontsize=16,  ha='left', x=0.125)
         plt.subplots_adjust(top=0.93)
         plt.savefig(save_file)
-        plt.show()
+        print(f"visualizations saved to {save_file}")
+        #plt.show()
+
 
 # AudioFileVisualizer().visualize_audio_file_fragment(
 #     f"{audio_file} and scores",
