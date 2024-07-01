@@ -7,6 +7,7 @@ from .elephant_rumble_classifier import ElephantRumbleClassifier
 from .audio_file_processor import AudioFileProcessor
 from .audio_file_visualizer import AudioFileVisualizer
 from .raven_file_helper import RavenFileHelper
+from .raven_file_helper import RavenLabel
 
 # consider: https://www.youtube.com/watch?v=Qw9TmrAIS6E for demos
 
@@ -26,7 +27,8 @@ def parse_args():
           --save-visualizations=/tmp/vis.png \
           --limit-audio-hours=1 \
           --discrete-colormap \
-          --load-raven-files ~/proj/elephantlistening/data/Rumble 
+          --load-raven-files ~/proj/elephantlistening/data/Rumble \
+          --save-raven-file=/tmp/generated_labels.raven
     """
     parser = argparse.ArgumentParser(description="Find elephant rumbles in an audio clip",
                                      usage=usage)
@@ -43,10 +45,10 @@ def parse_args():
 
 def initialize_models():
     model_name = "best_using_more_varied_training_data"
-    model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
-    model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
-    model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
-    #model_name = 'elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth'
+    #model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
+    #model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
+    #model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
+    model_name = 'elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth'
 
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
@@ -62,12 +64,38 @@ def main():
     atw, erc = initialize_models()
     afp = AudioFileProcessor(atw, erc,device=DEVICE)
     for audio_file in args.input_files:
+
         t0 = time.time()
         scores = afp.classify_wave_file_for_rumbles(audio_file,limit_audio_hours=args.limit_audio_hours)
-        t1 = time.time()
-        print(f"{t1-t0} seconds to process {args.limit_audio_hours} hours of data")
         if args.save_classification_scores:
           torch.save(scores, args.save_classification_scores)
+        t1 = time.time()
+        print(f"{t1-t0} seconds to process {args.limit_audio_hours} hours of data")
+
+        if args.save_raven_file:
+          rfh = RavenFileHelper()
+          continuous_segments = rfh.find_continuous_segments(scores[:,1] - scores[:,0] > 0)
+          long_enough_segments = rfh.find_long_enough_segments(continuous_segments,n=3)
+          print(f"of the {len(continuous_segments)} segmentsclassified as rumbles\n",
+                f"only {len(long_enough_segments)} were over a second long")
+          raven_labels =[]
+          for (s0,s1) in long_enough_segments:
+              bt = afp.score_index_to_time(s0)
+              et = afp.score_index_to_time(s1)
+              lf,hf = 5,250
+              duration = et-bt
+              t1=t2=t3=notes="generated_by_classifier"
+              score="1" # TODO get the score from the model
+              ravenfile = "classifier_generated_raven_file.raven"
+              rl = RavenLabel(bt,et,
+                            lf,hf,
+                            duration,audio_file,
+                            t1,t2,t3,notes,
+                            score,
+                            ravenfile)
+              raven_labels.append(rl)
+          rfh.write_raven_file(raven_labels,args.save_raven_file)
+          print(f"Saved the segments classified as rumbles into {args.save_raven_file}")
         
         if args.save_visualizations:
           print("Rendering visualizations...")

@@ -23,12 +23,12 @@ class RavenLabel:
     ravenfile: Optional[str]
 
 class RavenFileHelper:
-    def __init__(self,root_path='data/Rumble'):
+    def __init__(self,root_path=None):
         self.ddb = duckdb.connect()
-        self.root_path = root_path
-        self.ddb = duckdb.connect()
-        self.raven_files = self.find_candidate_raven_files(root_path)
-        self.all_raven_data = self.all_raven_files_as_one_table(self.raven_files)
+        if root_path:
+            self.root_path = root_path
+            self.raven_files = self.find_candidate_raven_files(root_path)
+            self.all_raven_data = self.all_raven_files_as_one_table(self.raven_files)
 
     def find_continuous_segments(self, boolean_tensor):
         sign_changes = torch.cat(
@@ -47,6 +47,28 @@ class RavenFileHelper:
 
     def find_long_enough_segments(self, segments, n=3):
         return [(a, b) for a, b in segments if b - a >= n]
+    
+
+    def save_segments_to_raven_file(self,long_enough_segs,filename,audio_file_name,audio_file_processor):
+        afp = audio_file_processor # aware of mapping times to scores and back
+        raven_labels =[]
+        for (s0,s1) in long_enough_segs:
+            bt = afp.score_index_to_time(s0)
+            et = afp.score_index_to_time(s1)
+            lf,hf = 5,250
+            duration = et-bt
+            t1=t2=t3=notes="generated_by_classifier"
+            score="1" # TODO get the score from the model
+            ravenfile = "classifier_generated_raven_file.raven"
+            rl = RavenLabel(bt,et,
+                        lf,hf,
+                        duration,audio_file_name,
+                        t1,t2,t3,notes,
+                        score,
+                        ravenfile)
+            raven_labels.append(rl)
+        self.write_raven_file(raven_labels,filename)
+
 
     def find_candidate_raven_files(self,root_path):
         pattern = root_path + '/**/*.txt'
