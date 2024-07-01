@@ -50,7 +50,14 @@ class AudioFileProcessor:
                     aves_embeddings = self.get_aves_embeddings(chunk)
                     aves_embeddings = self.normalize_aves_embeddings(aves_embeddings) # to compare with cosine similiary
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
+                    ##print("ERROR!!!  {rumble_classification.shape} does not seem to equal an hour",
+                    ##      "Need to pad or interpolate or replay fragments of the previous hour???",
+                    ##      "Or pick a multiple of 320 for the frames per chunk?",
+                    ##      )
+                    ## TODO: Better to save the final 320 samples from the previous frame
+                    ## and prepend it to the new frame.
                     results.append(rumble_classification)
+                    results.append(rumble_classification[-2:-1,:])
                     if idx+1 >= limit_audio_hours:  # for unit testing
                         break
         return torch.cat(results)

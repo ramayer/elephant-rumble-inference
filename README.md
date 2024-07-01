@@ -38,3 +38,10 @@ This really wants a GPU.
 * It processes an hour of audio in 77 seconds on a CPU
 
 so about a 50x speedup on a GPU.
+
+
+
+# TODO
+
+ - annoying bug --- Every hour my labels slip by a sample :(
+    So by hour 19, the green things are many seconds before where they should be
