@@ -167,7 +167,7 @@ class AudioFileVisualizer:
 
         fig.suptitle(f"{title}", fontsize=16,  ha='left', x=0.125)
         plt.subplots_adjust(top=0.93)
-        plt.savefig(save_file)
+        plt.savefig(save_file, bbox_inches='tight', pad_inches=0)
         print(f"visualizations saved to {save_file}")
         #plt.show()
 
