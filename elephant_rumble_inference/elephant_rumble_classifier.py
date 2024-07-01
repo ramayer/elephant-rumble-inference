@@ -30,17 +30,20 @@ class ElephantRumbleClassifier(nn.Module):
         return cache_dir
 
     def choose_model_weights(self, criteria):
-        if criteria == "best_using_training_data_only":
+        if criteria in ["training", "best_using_training_data_only"]:
             return "elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth"
-        if criteria == "best_using_more_varied_training_data":
+        if criteria in ["enhanced", "best_using_more_varied_training_data"]:
             return "elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth"
         raise Exception("")
 
     def load_pretrained_weights(self, pretrained_weights):
+        if not pretrained_weights.endswith(".pth"):
+            pretrained_weights = self.choose_model_weights(pretrained_weights)
         self.download_model_files_if_needed(pretrained_weights)
         cache_dir  = self.get_cache_prefix()
         model_weights_file = os.path.join(cache_dir, pretrained_weights)
         self.load_state_dict(torch.load(model_weights_file))
+        self.eval()
 
     def download_model_files_if_needed(self, pretrained_weights):
         src_prefix = "https://0ape.com/pretrained_models"

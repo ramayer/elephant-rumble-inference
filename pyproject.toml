@@ -7,8 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-torchaudio = ">=2.3.0"
 einops = ">=0.8.0"
+# torchaudio = ">=2.3.0" # just makes google colab slow
 
 [build-system]
 requires = ["poetry-core"]
