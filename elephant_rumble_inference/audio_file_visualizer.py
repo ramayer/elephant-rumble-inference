@@ -63,8 +63,8 @@ class AudioFileVisualizer:
         
         start_index = audio_file_processor.time_to_score_index(start_time)
         end_index = audio_file_processor.time_to_score_index(end_time)
-        similarity = similarity_scoresz[start_index:end_index]
-        dissimilarity = dissimilarity_scoresz[start_index:end_index]
+        similarity = similarity_scoresz[start_index:end_index].clone()
+        dissimilarity = dissimilarity_scoresz[start_index:end_index].clone()
 
         n_fft = 2048
         hop_length = n_fft//4
@@ -155,8 +155,8 @@ class AudioFileVisualizer:
 
         #print("make sure similarity shape is compatible",s_db_rgb.shape, stretched_similarity.shape)
         fairseq_time = [i*duration/similarity.shape[0] for i in range(similarity.shape[0])]
-        ax2.plot(fairseq_time,similarity, color='tab:green')
-        ax2.plot(fairseq_time,dissimilarity, color='tab:red')
+        ax2.plot(fairseq_time,similarity_scoresz[start_index:end_index], color='tab:green')
+        ax2.plot(fairseq_time,dissimilarity_scoresz[start_index:end_index], color='tab:red')
 
         ax1.set_xlim(0, duration)
         ax2.set_xlim(0, duration)
@@ -164,8 +164,6 @@ class AudioFileVisualizer:
         # add a title with some room
         hour,minute,second = int(start_time//60//60),int(start_time//60)%60,start_time%60
         displaytime = f"{hour:02}:{minute:02}"
-
-
 
         fig.suptitle(f"{title}", fontsize=16,  ha='left', x=0.125)
         plt.subplots_adjust(top=0.93)

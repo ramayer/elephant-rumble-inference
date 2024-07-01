@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-
-import torch
 import argparse
-import einops
+import time
+import torch
 from .aves_torchaudio_wrapper import AvesTorchaudioWrapper
 from .elephant_rumble_classifier import ElephantRumbleClassifier
 from .audio_file_processor import AudioFileProcessor
@@ -43,10 +42,17 @@ def parse_args():
     return args
 
 def initialize_models():
+    model_name = "best_using_more_varied_training_data"
+    model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
+    model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
+    model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
+    #model_name = 'elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth'
+
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
-    erc_weights = erc.choose_model_weights("best_using_training_data_only")
-    erc.load_pretrained_weights(erc_weights)
+    erc.load_pretrained_weights(model_name)
+    atw.eval()
+    erc.eval()
     return atw, erc
 
 def main():
@@ -56,26 +62,33 @@ def main():
     atw, erc = initialize_models()
     afp = AudioFileProcessor(atw, erc,device=DEVICE)
     for audio_file in args.input_files:
+        t0 = time.time()
         scores = afp.classify_wave_file_for_rumbles(audio_file,limit_audio_hours=args.limit_audio_hours)
+        t1 = time.time()
+        print(f"{t1-t0} seconds to process {args.limit_audio_hours} hours of data")
         if args.save_classification_scores:
           torch.save(scores, args.save_classification_scores)
+        
         if args.save_visualizations:
+          print("Rendering visualizations...")
           if args.load_raven_files:
              rfh = RavenFileHelper(args.load_raven_files)
              lbls = rfh.get_all_labels_for_wav_file('CEB1_20111010_000000.wav')
           else:
              lbls = []
-
-          AudioFileVisualizer().visualize_audio_file_fragment(
-              f"{audio_file} and scores",
-              args.save_visualizations,
-              audio_file,
-              scores[:,1],
-              scores[:,0],
-              afp,
-              start_time=0,
-              end_time=60*5,
-              make_discrete=args.discrete_colormap,
-              labels = lbls
-          )
+          for hour in range(args.limit_audio_hours):
+            AudioFileVisualizer().visualize_audio_file_fragment(
+                f"{audio_file} starting at {hour:02} classified by {erc.model_name}",
+                f"{args.save_visualizations}_{hour:02}.png" ,
+                audio_file,
+                scores[:,1],
+                scores[:,0],
+                afp,
+                start_time=hour*60*60,
+                end_time=(hour+1)*60*60,
+                make_discrete=args.discrete_colormap,
+                width = 199,
+                height = 8,
+                labels = lbls
+            )
 

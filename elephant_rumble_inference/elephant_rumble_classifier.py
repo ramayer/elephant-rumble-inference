@@ -11,6 +11,7 @@ class ElephantRumbleClassifier(nn.Module):
         dropout=0.2,
     ):
         super(ElephantRumbleClassifier, self).__init__()
+        self.model_name = "[no weights loaded]"
         self.act = nn.LeakyReLU()
         self.linear1 = nn.Linear(input_dim, hidden_dim)
         self.linear2 = nn.Linear(hidden_dim, output_dim)
@@ -29,19 +30,21 @@ class ElephantRumbleClassifier(nn.Module):
         cache_dir = os.path.join(cache_prefix, "fruitpunch_elephants")
         return cache_dir
 
-    def choose_model_weights(self, criteria):
-        if criteria in ["training", "best_using_training_data_only"]:
+    def choose_model_weights(self, model_name):
+        if model_name in ["training", "best_using_training_data_only"]:
             return "elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth"
-        if criteria in ["enhanced", "best_using_more_varied_training_data"]:
+        if model_name in ["enhanced", "best_using_more_varied_training_data"]:
             return "elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth"
-        raise Exception("")
+        return model_name
 
-    def load_pretrained_weights(self, pretrained_weights):
-        if not pretrained_weights.endswith(".pth"):
-            pretrained_weights = self.choose_model_weights(pretrained_weights)
-        self.download_model_files_if_needed(pretrained_weights)
+    def load_pretrained_weights(self, model_name):
+        if not model_name.endswith(".pth"):
+            model_name = self.choose_model_weights(model_name)
+            print(f"using {model_name}")
+        self.model_name = model_name
+        self.download_model_files_if_needed(model_name)
         cache_dir  = self.get_cache_prefix()
-        model_weights_file = os.path.join(cache_dir, pretrained_weights)
+        model_weights_file = os.path.join(cache_dir, model_name)
         self.load_state_dict(torch.load(model_weights_file))
         self.eval()
 

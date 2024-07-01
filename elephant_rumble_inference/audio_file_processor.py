@@ -17,6 +17,12 @@ class AudioFileProcessor:
     def score_index_to_time(self,s):
         return s * self.audio_samples_per_embedding / self.rumble_sr
 
+    def normalize_aves_embeddings(self,embs):
+        with torch.inference_mode(): # torch.no_grad():
+            norms = embs.norm(p=2, dim=1, keepdim=True)
+            unit_vecs = embs / norms
+            return unit_vecs.to('cpu').detach()
+
     def get_aves_embeddings(self, chunk):
         with torch.inference_mode():
             y32 = chunk.to(torch.float32).view(1, chunk.shape[0]).to(self.device)
@@ -40,8 +46,9 @@ class AudioFileProcessor:
         for idx, (chunk,) in enumerate(streamer.stream()):
             if chunk is not None:
                 with torch.inference_mode():  # torch.no_grad():
-                    print(f"processing hour {idx} of  {wav_file_path}")
+                    print(f"processing hour {idx} of {wav_file_path}")
                     aves_embeddings = self.get_aves_embeddings(chunk)
+                    aves_embeddings = self.normalize_aves_embeddings(aves_embeddings) # to compare with cosine similiary
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
                     results.append(rumble_classification)
                     if idx+1 >= limit_audio_hours:  # for unit testing
