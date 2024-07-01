@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import time
 import torch
 from .aves_torchaudio_wrapper import AvesTorchaudioWrapper
@@ -17,7 +18,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"using {DEVICE}")
 if DEVICE=='cpu':
   print("WARNING - this can be extremely slow on the CPU - prepare to wait a long time")
-  print("   Recommend running with --limit-audio-hours=1 ")
+  print("   Recommend running with --limit-audio-hours=1 when on CPU.")
 
 def parse_args():
     
@@ -49,7 +50,6 @@ def initialize_models():
     #model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
     #model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
     model_name = 'elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth'
-
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
     erc.load_pretrained_weights(model_name)
@@ -64,6 +64,8 @@ def main():
     atw, erc = initialize_models()
     afp = AudioFileProcessor(atw, erc,device=DEVICE)
     for audio_file in args.input_files:
+        
+        audio_file_without_path = os.path.basename(audio_file)
 
         t0 = time.time()
         scores = afp.classify_wave_file_for_rumbles(audio_file,limit_audio_hours=args.limit_audio_hours)
@@ -76,37 +78,38 @@ def main():
           rfh = RavenFileHelper()
           continuous_segments = rfh.find_continuous_segments(scores[:,1] - scores[:,0] > 0)
           long_enough_segments = rfh.find_long_enough_segments(continuous_segments,n=3)
-          print(f"of the {len(continuous_segments)} segmentsclassified as rumbles\n",
-                f"only {len(long_enough_segments)} were over a second long")
+          print(f"of the {len(continuous_segments)} segments classified as rumbles ",
+                f"only {len(long_enough_segments)} were over a second long.")
           raven_labels =[]
           for (s0,s1) in long_enough_segments:
               bt = afp.score_index_to_time(s0)
               et = afp.score_index_to_time(s1)
               lf,hf = 5,250
               duration = et-bt
-              t1=t2=t3=notes="generated_by_classifier"
+              tag1=tag2=tag3=notes="generated_by_classifier"
               score="1" # TODO get the score from the model
               ravenfile = "classifier_generated_raven_file.raven"
               rl = RavenLabel(bt,et,
                             lf,hf,
                             duration,audio_file,
-                            t1,t2,t3,notes,
+                            tag1,tag2,tag3,notes,
                             score,
                             ravenfile)
               raven_labels.append(rl)
           rfh.write_raven_file(raven_labels,args.save_raven_file)
-          print(f"Saved the segments classified as rumbles into {args.save_raven_file}")
+          t2 = time.time()
+          print(f"Created RAVEN file of segments classified as rumbles into {args.save_raven_file} in {t2-t1} seconds.")
         
         if args.save_visualizations:
           print("Rendering visualizations...")
           if args.load_raven_files:
              rfh = RavenFileHelper(args.load_raven_files)
-             lbls = rfh.get_all_labels_for_wav_file('CEB1_20111010_000000.wav')
+             lbls = rfh.get_all_labels_for_wav_file(audio_file_without_path)
           else:
              lbls = []
           for hour in range(args.limit_audio_hours):
             AudioFileVisualizer().visualize_audio_file_fragment(
-                f"{audio_file} starting at {hour:02} classified by {erc.model_name}",
+                f"{audio_file_without_path}, Starting at {hour:02}:00:00, Classified by {erc.model_name}",
                 f"{args.save_visualizations}_{hour:02}.png" ,
                 audio_file,
                 scores[:,1],
