@@ -49,24 +49,8 @@ class RavenFileHelper:
         return [(a, b) for a, b in segments if b - a >= n]
     
 
-    def save_segments_to_raven_file(self,long_enough_segs,filename,audio_file_name,audio_file_processor):
-        afp = audio_file_processor # aware of mapping times to scores and back
-        raven_labels =[]
-        for (s0,s1) in long_enough_segs:
-            bt = afp.score_index_to_time(s0)
-            et = afp.score_index_to_time(s1)
-            lf,hf = 5,250
-            duration = et-bt
-            t1=t2=t3=notes="generated_by_classifier"
-            score="1" # TODO get the score from the model
-            ravenfile = "classifier_generated_raven_file.raven"
-            rl = RavenLabel(bt,et,
-                        lf,hf,
-                        duration,audio_file_name,
-                        t1,t2,t3,notes,
-                        score,
-                        ravenfile)
-            raven_labels.append(rl)
+    def save_segments_to_raven_file(self,raven_labels,filename,audio_file_name,audio_file_processor):
+
         self.write_raven_file(raven_labels,filename)
 
 
@@ -246,7 +230,7 @@ class RavenFileHelper:
                         break
         
         """
-        wav_file_without_path = file_name = os.path.basename(wav_file)
+        wav_file_without_path = os.path.basename(wav_file)
         wav_file_pattern = re.sub(r'dz(an)?', 'dz%', wav_file_without_path)
         rs = self.ddb.sql(f"""
             SELECT * From all_raven_labels

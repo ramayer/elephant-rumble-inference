@@ -43,5 +43,8 @@ so about a 50x speedup on a GPU.
 
 # TODO
 
- - annoying bug --- Every hour my labels slip by a sample :(
-    So by hour 19, the green things are many seconds before where they should be
+    - annoying bug --- Every hour my labels slip by a sample :(
+      So by hour 19, the green things are many seconds before where they should be
+
+    - annoying bug -- the final hour is often not a full 60 minutes; and
+      my two graphs aren't lining up.

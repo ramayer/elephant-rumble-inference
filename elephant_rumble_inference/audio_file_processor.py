@@ -46,7 +46,7 @@ class AudioFileProcessor:
         for idx, (chunk,) in enumerate(streamer.stream()):
             if chunk is not None:
                 with torch.inference_mode():  # torch.no_grad():
-                    print(f"processing hour {idx} of {wav_file_path}")
+                    print(f"Classifying hour {idx} of {wav_file_path}")
                     aves_embeddings = self.get_aves_embeddings(chunk)
                     aves_embeddings = self.normalize_aves_embeddings(aves_embeddings) # to compare with cosine similiary
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
