@@ -31,11 +31,11 @@ def parse_args():
         elephant-rumble-inference --save-raven data/*.wav 
 
         elephant-rumble-inference \
-            --save-raven --save-vis --save-scores \
-            --limit 1 \
+            --save-raven --save-scores \
+            --visualizations-per-audio-file=2 \
             --load-labels ~/proj/elephantlistening/data/Rumble \
-            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01-test \
-            ~/proj/elephantlistening/data/Rumble/Testing/*/Sounds/*.wav
+            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01-train \
+            ~/proj/elephantlistening/data/Rumble/Training/Sounds/*.wav
 
         elephant-rumble-inference --help
 
@@ -55,7 +55,7 @@ def parse_args():
         help="directory to safe outputs",
     )
     parser.add_argument(
-        "--visualizations_per_audio_file",
+        "--visualizations-per-audio-file",
         type=int,
         default=0,
         help="visualiztions are slow so be patient if you pick more than 1",
@@ -107,12 +107,13 @@ def initialize_models():
 
 
 def classify_audio_file(afp, audio_file, limit_audio_hours, save_file_path):
-    scores = afp.classify_wave_file_for_rumbles(
-        audio_file, limit_audio_hours=limit_audio_hours
-    )
-    if save_file_path:
-        torch.save(scores, save_file_path)
-    return scores
+    with torch.inference_mode():
+        scores = afp.classify_wave_file_for_rumbles(
+            audio_file, limit_audio_hours=limit_audio_hours
+        )
+        if save_file_path:
+            torch.save(scores, save_file_path)
+        return scores
 
 
 def save_raven_file(audio_file, scores, raven_file, afp):
@@ -205,25 +206,26 @@ def main():
             interesting_hours = Counter([int(sec/60/60) for sec in interesting_seconds])
             for element, count in interesting_hours.most_common():
                 print(f"{element}: {count}")
-            num_vis =0 
-            for hour, count in interesting_hours.most_common():
-                vis_filename = f"{audio_file_without_path}_{hour:02}:00:00.png"
-                vis_path = os.path.join(visualization_dir,vis_filename)
-                AudioFileVisualizer().visualize_audio_file_fragment(
-                    f"{audio_file_without_path}, Starting at {hour:02}:00:00, Classified by {erc.model_name}",
-                    vis_path,
-                    audio_file,
-                    scores[:, 1],
-                    scores[:, 0],
-                    afp,
-                    start_time=hour * 60 * 60,
-                    end_time=(hour + 1) * 60 * 60,
-                    make_discrete=args.discrete_colormap,
-                    width=199,
-                    height=8,
-                    labels=lbls,
-                )
-                num_vis += 1
-                if num_vis >= args.visualizations_per_audio_file:
-                    print(f"only doing {num_vis} visualization per file")
-                    break
+            num_vis =0
+            with torch.inference_mode():
+                for hour, count in interesting_hours.most_common():
+                    vis_filename = f"{audio_file_without_path}_{hour:02}:00:00.png"
+                    vis_path = os.path.join(visualization_dir,vis_filename)
+                    AudioFileVisualizer().visualize_audio_file_fragment(
+                        f"{audio_file_without_path}, Starting at {hour:02}:00:00, Classified by {erc.model_name}",
+                        vis_path,
+                        audio_file,
+                        scores[:, 1],
+                        scores[:, 0],
+                        afp,
+                        start_time=hour * 60 * 60,
+                        end_time=(hour + 1) * 60 * 60,
+                        make_discrete=args.discrete_colormap,
+                        width=199,
+                        height=8,
+                        labels=lbls,
+                    )
+                    num_vis += 1
+                    if num_vis >= args.visualizations_per_audio_file:
+                        print(f"only doing {num_vis} visualization per file")
+                        break

@@ -41,7 +41,8 @@ class AudioFileVisualizer:
             axarr.add_patch(rect)
             rect = patches.Rectangle((bt - patch_start -offset, lf-5), (et-bt+offset*2), (hf-lf+10), linewidth=1, edgecolor=color, facecolor='none')
             axarr.add_patch(rect)
-    
+
+
     def visualize_audio_file_fragment(self,
                           title,
                           save_file,
@@ -145,6 +146,8 @@ class AudioFileVisualizer:
         # s_db_rgb[:,:,2] = s_db_rgb[:,:,2] * 0
         print(f"  plotting at {time.time()-t0}")
 
+        plt.ioff()
+
         fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(width, height),
                                        gridspec_kw={'height_ratios': [3, 1]}
                                        )
@@ -184,6 +187,8 @@ class AudioFileVisualizer:
             plt.savefig(save_file, bbox_inches='tight', pad_inches=0)
         else:
             plt.savefig(save_file)
+        plt.close()
+        plt.close('all')
         print(f"  visualizations saved to {save_file} at {time.time()-t0}")
         #plt.show()
 
