@@ -10,13 +10,11 @@ class AudioFileVisualizer:
     def __init__(self):
         pass
 
-    def interpolate_and_scale_1D_tensor(self, input_tensor, target_length):
+    def interpolate_1D_tensor(self, input_tensor, target_length):
         # kinda crazy, but:
         # https://stackoverflow.com/questions/73928655/resizing-a-vector-by-interpolation
         z = input_tensor[None,None,:]
         z2 = torch.nn.functional.interpolate(z,target_length)[0][0]
-        #z2 -= np.min(z2.numpy())
-        #z2 /= np.max(z2.numpy())
         return z2
     
     def make_similarity_discrete(self, similarity, dissimilarity):
@@ -93,7 +91,7 @@ class AudioFileVisualizer:
             #db = db - np.max(db)
             #print("db shape",np_spectral_power.shape)
             noise_floor =  np.percentile(np_spectral_power,0)
-            clip_level = np.percentile(np_spectral_power, 99.99)
+            clip_level = np.percentile(np_spectral_power, 99.9)
             db_normalized = np_spectral_power
             db_normalized[np_spectral_power < noise_floor]=noise_floor
             db_normalized[np_spectral_power > clip_level]=clip_level
@@ -108,26 +106,29 @@ class AudioFileVisualizer:
         s_db_rgb = np.stack((normed,normed,normed), axis=-1)
         print(f"  coloring at {time.time()-t0}")
 
-        stretched_similarity = self.interpolate_and_scale_1D_tensor(similarity,spec.shape[1])
-        stretched_dissimilarity = self.interpolate_and_scale_1D_tensor(dissimilarity,spec.shape[1])
+        stretched_similarity = self.interpolate_1D_tensor(similarity,spec.shape[1])
+        stretched_dissimilarity = self.interpolate_1D_tensor(dissimilarity,spec.shape[1])
 
         if make_discrete:
              s,d = self.make_similarity_discrete(stretched_similarity,stretched_dissimilarity)
              stretched_similarity,stretched_dissimilarity = s,d
 
         ## An overcomplex color map
-        nearness = stretched_similarity.numpy()
-        farness  = stretched_dissimilarity.numpy()
+        nearness = stretched_similarity
+        farness  = stretched_dissimilarity
+
+        sim = nearness-farness
+        sim /= sim.abs().max()
+        sim = sim.numpy()
         
-        #nearness[nearness<0] = 0
-        nearness -= np.min(nearness)
-        nearness /= np.max(nearness)
-        nothing_threshold=0
-        #farness[farness<0] = 0
-        farness -= np.min(farness)
-        farness /= np.max(farness)
-        redness = farness
-        greenness = nearness
+        redness = -sim * 8 + 1
+        redness[redness>1] = 1
+        redness[redness<0] = 0
+
+        greenness = sim * 8 + 1
+        greenness[greenness>1] = 1
+        greenness[greenness<0] = 0
+        
         blueness = 1-(redness + greenness)
         blueness[blueness<0] = 0
         #blueness = blueness - np.min(blueness)

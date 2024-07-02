@@ -28,9 +28,20 @@ def parse_args():
 
     usage = r"""Usage:
 
-        elephant-rumble-inference data/*.wav --save-raven --save-vis 
+        elephant-rumble-inference --save-raven data/*.wav 
 
-        elephant-rumble-inference data/*.wav --help # for more options
+        elephant-rumble-inference \
+            --save-raven --save-vis --save-scores \
+            --limit 1 \
+            --load-labels ~/proj/elephantlistening/data/Rumble \
+            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01-test \
+            ~/proj/elephantlistening/data/Rumble/Testing/*/Sounds/*.wav
+
+        elephant-rumble-inference --help
+
+        -- nice unlabeled rumbles at
+            nn03a_20201020_000100.wav at 10:24:00
+            nn02d_202001013_000100.wav 06:25:00
     """
     parser = argparse.ArgumentParser(
         description="Find elephant rumbles in an audio clip", usage=usage
@@ -44,9 +55,10 @@ def parse_args():
         help="directory to safe outputs",
     )
     parser.add_argument(
-        "--save-vis",
-        action="store_true",
-        help="Save visualizations to files",
+        "--visualizations_per_audio_file",
+        type=int,
+        default=0,
+        help="visualiztions are slow so be patient if you pick more than 1",
     )
     parser.add_argument(
         "--save-scores",
@@ -147,7 +159,7 @@ def choose_save_locations(args, audio_file):
         score_file = os.path.join(save_dir, audio_file_without_path + ".scores.pt")
     if args.save_raven:
         raven_file = os.path.join(save_dir, audio_file_without_path + ".raven.txt")
-    if args.save_vis:
+    if args.visualizations_per_audio_file > 0:
         visualization_dir = save_dir
     return score_file, raven_file, visualization_dir
 
@@ -184,7 +196,17 @@ def main():
                 lbls = rfh.get_all_labels_for_wav_file(audio_file_without_path)
             else:
                 lbls = []
-            for hour in range(args.limit_audio_hours):
+
+            rfh = RavenFileHelper()
+            continuous_segments = rfh.find_continuous_segments(scores[:, 1] - scores[:, 0] > 0)
+            long_enough_segments = rfh.find_long_enough_segments(continuous_segments, n=5)
+            interesting_seconds = [afp.score_index_to_time(bt) for bt,et in long_enough_segments]
+            from collections import Counter
+            interesting_hours = Counter([int(sec/60/60) for sec in interesting_seconds])
+            for element, count in interesting_hours.most_common():
+                print(f"{element}: {count}")
+            num_vis =0 
+            for hour, count in interesting_hours.most_common():
                 vis_filename = f"{audio_file_without_path}_{hour:02}:00:00.png"
                 vis_path = os.path.join(visualization_dir,vis_filename)
                 AudioFileVisualizer().visualize_audio_file_fragment(
@@ -201,3 +223,7 @@ def main():
                     height=8,
                     labels=lbls,
                 )
+                num_vis += 1
+                if num_vis >= args.visualizations_per_audio_file:
+                    print(f"only doing {num_vis} visualization per file")
+                    break
