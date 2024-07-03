@@ -32,10 +32,10 @@ def parse_args():
 
         elephant-rumble-inference \
             --save-raven --save-scores \
-            --visualizations-per-audio-file=2 \
             --load-labels ~/proj/elephantlistening/data/Rumble \
-            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01-train \
-            ~/proj/elephantlistening/data/Rumble/Training/Sounds/*.wav
+            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01 \
+            --visualizations-per-audio-file=5 --visualization-duration=60 \
+            ~/proj/elephantlistening/data/Rumble/Training/Sounds/*.wav 
 
         elephant-rumble-inference --help
 
@@ -99,12 +99,11 @@ def initialize_models():
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
-    model_name = (
-        "elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth"
-    )
+    model_name = "elephant_rumble_classifier_500_192_2024-07-03T01:27:40.424353_from_train_folder_valloss=5.55.pth"
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
     erc.load_pretrained_weights(model_name)
+    print(f"Using weights from {erc.model_name}")
     atw.eval()
     erc.eval()
     return atw, erc
@@ -112,11 +111,14 @@ def initialize_models():
 
 def classify_audio_file(afp, audio_file, limit_audio_hours, save_file_path):
     with torch.inference_mode():
+        t0 = time.time()
         scores = afp.classify_wave_file_for_rumbles(
             audio_file, limit_audio_hours=limit_audio_hours
         )
         if save_file_path:
             torch.save(scores, save_file_path)
+        t1 = time.time()
+        print(f"{t1-t0} to classify {audio_file} [limited to {limit_audio_hours} hours]")
         return scores
 
 
@@ -233,6 +235,7 @@ def main():
                         end_time=interesting_time+visualization_duration_secs,
                         width=1920/100 * 3 * visualization_duration_min // 15,
                         height=1080/100,
+                        colormap="clean",
                         labels=lbls,
                     )
                     num_vis += 1

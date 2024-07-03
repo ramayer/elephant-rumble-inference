@@ -31,8 +31,8 @@ class ElephantRumbleClassifier(nn.Module):
         return cache_dir
 
     def choose_model_weights(self, model_name):
-        if model_name in ["training", "best_using_training_data_only"]:
-            return "elephant_rumble_classifier_500_192_2024-06-29T23:39:01.415771_valloss=5.83.pth"
+        if model_name in ["best", "training", "best_using_training_data_only"]:
+            return "elephant_rumble_classifier_500_192_2024-07-03T01:27:40.424353_from_train_folder_valloss=5.55.pth"
         if model_name in ["enhanced", "best_using_more_varied_training_data"]:
             return "elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth"
         return model_name
