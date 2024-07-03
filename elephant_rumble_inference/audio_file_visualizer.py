@@ -52,8 +52,8 @@ class AudioFileVisualizer:
                           audio_file_processor:afp.AudioFileProcessor,
                           start_time=0,
                           end_time=60*6,
-                          height=8,
-                          width=24,
+                          height=1280/100,
+                          width=1920/100,
                           make_discrete=False,
                           labels=[]
                           ):
@@ -64,10 +64,10 @@ class AudioFileVisualizer:
         similarity = similarity_scoresz[start_index:end_index].clone()
         dissimilarity = dissimilarity_scoresz[start_index:end_index].clone()
 
-        n_fft = 2048
+        n_fft = 1024
         hop_length = n_fft//4
         duration = end_time-start_time
-        audio,sr = librosa.load(audio_file,sr=2000,offset=start_time,duration=end_time-start_time)
+        audio,sr = librosa.load(audio_file,sr=1000,offset=start_time,duration=end_time-start_time)
         actual_duration = audio.shape[0] / sr
         print(f"  loaded audio in {time.time()-t0}")
         print(f"  duration","intended=",duration,"actual=",actual_duration)
@@ -175,16 +175,16 @@ class AudioFileVisualizer:
         hour,minute,second = int(start_time//60//60),int(start_time//60)%60,start_time%60
         displaytime = f"{hour:02}:{minute:02}"
 
-        fig.suptitle(f"{title}", fontsize=16,  ha='left', x=0.125)
         plt.subplots_adjust(top=0.93,left=0)
+        fig.suptitle(f"{title}", fontsize=16,  ha='left', x=0)
         print(f"  saving at {time.time()-t0}")
 
-        if matplotlib_fixed_issue_26150:=False:
+        if matplotlib_fixed_issue_26150:=True:
             #fig.tight_layout()
             #print('fig.subplotpairs',fig.subplotpars)
             # Prettier but buggy
             # https://github.com/matplotlib/matplotlib/issues/26150
-            plt.savefig(save_file, bbox_inches='tight', pad_inches=0)
+            plt.savefig(save_file, bbox_inches='tight', pad_inches=0.02)
         else:
             plt.savefig(save_file)
         plt.close()

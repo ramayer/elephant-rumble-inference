@@ -42,6 +42,9 @@ def parse_args():
         -- nice unlabeled rumbles at
             nn03a_20201020_000100.wav at 10:24:00
             nn02d_202001013_000100.wav 06:25:00
+
+            Interesting soundd at CEB1_20111017_00000.wav at 00:20:00
+            Same sound at CEB1_20120715_0000.wav also at 00:20:00
     """
     parser = argparse.ArgumentParser(
         description="Find elephant rumbles in an audio clip", usage=usage
@@ -61,6 +64,12 @@ def parse_args():
         help="visualiztions are slow so be patient if you pick more than 1",
     )
     parser.add_argument(
+        "--visualization-duration",
+        type=int,
+        default=15,
+        help="Minutes of audio for a visualization. 15 is nice for wide monitor, 60 is interesting if you don't mind horizontal scrolling",
+    )
+    parser.add_argument(
         "--save-scores",
         action="store_true",
         help="Save classification scores to a file",
@@ -74,11 +83,6 @@ def parse_args():
         "--load-labels-from-raven-file-folder",
         type=str,
         help="show labels from existing raven files",
-    )
-    parser.add_argument(
-        "--discrete-colormap",
-        action="store_true",
-        help="Make output visualization use a discrete color map",
     )
     parser.add_argument(
         "--limit-audio-hours",
@@ -191,6 +195,9 @@ def main():
         t2 = time.time()
 
         if visualization_dir:
+            visualization_duration_min  = args.visualization_duration
+            visualization_duration_secs = args.visualization_duration * 60
+
             print("Rendering visualizations...")
             if args.load_labels_from_raven_file_folder:
                 rfh = RavenFileHelper(args.load_labels_from_raven_file_folder)
@@ -203,26 +210,29 @@ def main():
             long_enough_segments = rfh.find_long_enough_segments(continuous_segments, n=5)
             interesting_seconds = [afp.score_index_to_time(bt) for bt,et in long_enough_segments]
             from collections import Counter
-            interesting_hours = Counter([int(sec/60/60) for sec in interesting_seconds])
-            for element, count in interesting_hours.most_common():
+            # 5 minute spectrograms are easier to handle than hour long ones.
+            interesting_times = Counter([int(sec/visualization_duration_secs)*visualization_duration_secs for sec in interesting_seconds])
+            for element, count in interesting_times.most_common():
                 print(f"{element}: {count}")
             num_vis =0
             with torch.inference_mode():
-                for hour, count in interesting_hours.most_common():
-                    vis_filename = f"{audio_file_without_path}_{hour:02}:00:00.png"
+                for interesting_time, count in interesting_times.most_common():
+                    hour   = (interesting_time) // 60 // 60
+                    minute = (interesting_time // 60) % 60
+                    dttm   = f"{hour:02}:{minute:02}:00"
+                    vis_filename = f"{audio_file_without_path}_{dttm}.png"
                     vis_path = os.path.join(visualization_dir,vis_filename)
                     AudioFileVisualizer().visualize_audio_file_fragment(
-                        f"{audio_file_without_path}, Starting at {hour:02}:00:00, Classified by {erc.model_name}",
+                        f"{audio_file_without_path}, Starting at {dttm}, Classified by {erc.model_name}",
                         vis_path,
                         audio_file,
                         scores[:, 1],
                         scores[:, 0],
                         afp,
-                        start_time=hour * 60 * 60,
-                        end_time=(hour + 1) * 60 * 60,
-                        make_discrete=args.discrete_colormap,
-                        width=199,
-                        height=8,
+                        start_time=interesting_time,
+                        end_time=interesting_time+visualization_duration_secs,
+                        width=1920/100 * 3 * visualization_duration_min // 15,
+                        height=1080/100,
                         labels=lbls,
                     )
                     num_vis += 1

@@ -240,6 +240,77 @@ class RavenFileHelper:
         results = [RavenLabel(*row) for row in rs.fetchall()]
         return results
     
+    ################################################################################
+    # Training tools (not needed for inferrence)
+    ################################################################################
+
+    def get_files_with_high_quality_labels(self):
+        ifs = self.get_interesting_files()
+        files_with_high_quality_labels = [f for f in ifs if "Test" in self.audio_filename_to_path[f]]
+        return files_with_high_quality_labels
+    
+    def get_files_with_low_quality_labels(self):
+        ifs = self.get_interesting_files()
+        files_with_high_quality_labels = [f for f in ifs if "Train" in self.audio_filename_to_path[f]]
+        return files_with_high_quality_labels
+    
+    def find_candidate_audio_files(self,root_path):
+        pattern = root_path + '/**/*.wav'
+        wavfiles = glob.glob(pattern,recursive=True)
+        return wavfiles
+    
+    def identify_useful_files(self):
+        audio_files = self.find_candidate_audio_files(self.root_path)
+        self.files_from_raven = self.ddb.sql('select distinct "Begin File" from all_raven_files').fetchall()
+        files_from_raven_with_fixed_names = set([re.sub('dzan','dz',row[0]) for row in self.files_from_raven])
+        self.audio_filename_to_path = {re.sub('.*/','',f):f for f in audio_files}
+        audio_files_without_path = set([re.sub('.*/','',f) for f in audio_files])
+        return files_from_raven_with_fixed_names & audio_files_without_path
+    
+    def get_interesting_files(self):
+        return self.identify_useful_files()
+
+       ## Helper functions to quickly get 1khz samples from files
+
+    def load_entire_wav_file(self, wav_file_path, new_sr = None):
+        import torchaudio.io as tai
+        if not new_sr:
+            raise Exception("load_entire_wav_file now requires a sr")
+        streamer = tai.StreamReader(wav_file_path)
+        sr = int(streamer.get_src_stream_info(0).sample_rate)
+        streamer.add_basic_audio_stream(
+            stream_index = 0,
+            sample_rate = new_sr,
+            frames_per_chunk = new_sr * 60 * 60 * 24,
+        )
+        results = []
+        for idx,(chunk,) in enumerate(streamer.stream()):
+            #print(idx,chunk.shape)
+            results.append(chunk)
+        return torch.cat(results)
+
+    def get_cached_path(self, audio_filename, new_sr, prefix='/tmp/downsampled_audio'):
+        os.makedirs(prefix,exist_ok=True)
+        return f'{prefix}/{audio_filename}.{new_sr}.pt'
+
+    def precompute_downsampled_pytorch_tensor(self, audio_filename, new_sr):
+        cached_path = self.get_cached_path(audio_filename,new_sr)
+        print(audio_filename, f"resampling {audio_filename} to {new_sr} at {cached_path}")
+        source_path = self.audio_filename_to_path[audio_filename]
+        audio_samples = self.load_entire_wav_file(source_path,new_sr=new_sr)
+        audio_samples = audio_samples.flatten().to(torch.float16)
+        torch.save(audio_samples,cached_path)
+
+    def get_downsampled_tensor(self, audio_filename, start, duration, new_sr):
+        cached_path = self.get_cached_path(audio_filename,new_sr)
+        if not os.path.exists(cached_path):
+          self.precompute_downsampled_pytorch_tensor(audio_filename, new_sr)
+        y = torch.load(cached_path,mmap=True)
+        return y[int(start*new_sr):int((start + duration)*new_sr+1)].clone().detach()
+    
+    ## Helper functions to quickly get 1khz samples from files
+
+
 if this_should_be_a_unit_test:=False:
     rfh = RavenFileHelper(root_path='/home/ron/proj/elephantlistening/data/Rumble')
     candidate_files = rfh.find_candidate_raven_files('/home/ron/proj/elephantlistening/data/Rumble')
