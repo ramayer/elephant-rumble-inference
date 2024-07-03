@@ -17,17 +17,6 @@ class AudioFileVisualizer:
         z2 = torch.nn.functional.interpolate(z,target_length)[0][0]
         return z2
     
-    def make_similarity_discrete(self, similarity, dissimilarity):
-        sim = similarity - dissimilarity
-        sim /= sim.abs().max()
-        g4 = sim * 0
-        r4 = sim * 0
-        g4[sim > -0.05] = 1 # Note this threshold can depend on each training run of the model.
-        r4[sim <  0.05] = 1 # the loss function only cares which is greater, not by how much.
-        g4[sim > 0] = 1
-        r4[sim < 0] = 1
-        return (g4,r4)
-
     def add_annotation_boxes(self,labels,patch_start,patch_end,axarr,offset=0.2,only=None,color=(0.0, 1.0, 1.0)):
         for row in labels:
             bt,et,lf,hf,dur,fn,tags,notes,tag1,tag2,score,raven_file = dataclasses.astuple(row)
@@ -54,7 +43,7 @@ class AudioFileVisualizer:
                           end_time=60*6,
                           height=1280/100,
                           width=1920/100,
-                          make_discrete=False,
+                          colormap='raw',
                           labels=[]
                           ):
         import time
@@ -110,26 +99,27 @@ class AudioFileVisualizer:
         stretched_similarity = self.interpolate_1D_tensor(similarity,spec.shape[1])
         stretched_dissimilarity = self.interpolate_1D_tensor(dissimilarity,spec.shape[1])
 
-        if make_discrete:
-             s,d = self.make_similarity_discrete(stretched_similarity,stretched_dissimilarity)
-             stretched_similarity,stretched_dissimilarity = s,d
-
         ## An overcomplex color map
-        nearness = stretched_similarity
-        farness  = stretched_dissimilarity
+        if colormap=='clean':
+            nearness = stretched_similarity
+            farness  = stretched_dissimilarity
 
-        sim = nearness-farness
-        sim /= sim.abs().max()
-        sim = sim.numpy()
-        
-        redness = -sim * 8 + 1
-        redness[redness>1] = 1
-        redness[redness<0] = 0
+            sim = nearness-farness
+            sim /= sim.abs().max()
+            sim = sim.numpy()
+            
+            redness = -sim * 8 + 1
+            redness[redness>1] = 1
+            redness[redness<0] = 0
 
-        greenness = sim * 8 + 1
-        greenness[greenness>1] = 1
-        greenness[greenness<0] = 0
-        
+            greenness = sim * 8 + 1
+            greenness[greenness>1] = 1
+            greenness[greenness<0] = 0
+        else:
+            redness = stretched_dissimilarity.numpy()
+            greenness = stretched_similarity.numpy()
+
+            
         blueness = 1-(redness + greenness)
         blueness[blueness<0] = 0
         #blueness = blueness - np.min(blueness)

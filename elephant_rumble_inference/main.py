@@ -135,7 +135,7 @@ def save_raven_file(audio_file, scores, raven_file, afp):
         lf, hf = 5, 250
         duration = et - bt
         tag1 = tag2 = tag3 = notes = "generated_by_classifier"
-        score = "1"  # TODO get the score from the model
+        score = 0.9  # TODO get the score from the model
         ravenfile = "classifier_generated_raven_file.raven"
         rl = RavenLabel(
             bt,

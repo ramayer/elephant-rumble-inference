@@ -6,6 +6,7 @@ import re
 import torch
 from dataclasses import dataclass
 from typing import Optional
+
 # shorter names for important columns from the raven file
 @dataclass
 class RavenLabel:
@@ -19,7 +20,7 @@ class RavenLabel:
     t2: Optional[str]
     t3: Optional[str]
     notes: Optional[str]
-    score: Optional[str]
+    score: Optional[float]
     ravenfile: Optional[str]
 
 class RavenFileHelper:
@@ -29,6 +30,7 @@ class RavenFileHelper:
             self.root_path = root_path
             self.raven_files = self.find_candidate_raven_files(root_path)
             self.all_raven_data = self.all_raven_files_as_one_table(self.raven_files)
+            self.identify_useful_files()
 
     def find_continuous_segments(self, boolean_tensor):
         sign_changes = torch.cat(
@@ -50,9 +52,7 @@ class RavenFileHelper:
     
 
     def save_segments_to_raven_file(self,raven_labels,filename,audio_file_name,audio_file_processor):
-
         self.write_raven_file(raven_labels,filename)
-
 
     def find_candidate_raven_files(self,root_path):
         pattern = root_path + '/**/*.txt'
@@ -244,12 +244,12 @@ class RavenFileHelper:
     # Training tools (not needed for inferrence)
     ################################################################################
 
-    def get_files_with_high_quality_labels(self):
+    def get_files_from_test_folder(self):
         ifs = self.get_interesting_files()
         files_with_high_quality_labels = [f for f in ifs if "Test" in self.audio_filename_to_path[f]]
         return files_with_high_quality_labels
     
-    def get_files_with_low_quality_labels(self):
+    def get_files_from_train_folder(self):
         ifs = self.get_interesting_files()
         files_with_high_quality_labels = [f for f in ifs if "Train" in self.audio_filename_to_path[f]]
         return files_with_high_quality_labels
@@ -308,7 +308,96 @@ class RavenFileHelper:
         y = torch.load(cached_path,mmap=True)
         return y[int(start*new_sr):int((start + duration)*new_sr+1)].clone().detach()
     
-    ## Helper functions to quickly get 1khz samples from files
+    ## End of Helper functions to quickly get 1khz samples from files
+
+
+
+
+    ## NEGATIVE LABELS
+    def get_negative_labels(self,positive_labels):
+        """
+        get a fragment with no lables half-way between the positive labels
+        """
+        pl = sorted(positive_labels,key=lambda x:x.bt)
+        if len(pl) == 0:
+            return []
+        
+
+        negative_labels = []
+
+        
+        negative_label = RavenLabel(
+                    0, 
+                    min(pl[0].bt-5,60),
+                    25,
+                    100,
+                    min(pl[0].bt-5,60),
+                    pl[0].audio_file,
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    -1,
+                    pl[0].ravenfile,
+                )
+        negative_labels.append(negative_label)
+
+
+        for l1,l2 in zip(pl,pl[1:]):
+            if (l2.bt - l1.et < 20): # many sections between close rumbles seem to also have rumbles
+                continue
+            if (l2.bt - l1.et < 130):
+                negative_label = RavenLabel(
+                    l1.et + 5, 
+                    l2.bt - 5,
+                    (l1.lf + l2.lf)/2,
+                    (l1.hf + l2.hf)/2,
+                    (l2.bt - 5) - (l1.et + 5),
+                    l1.audio_file,
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    -1,
+                    l1.ravenfile,
+                )
+                negative_labels.append(negative_label)
+                continue
+            if (l2.bt - l1.et > 130):
+                negative_label = RavenLabel(
+                    l1.et + 5,
+                    l1.et + 65,
+                    (l1.lf + l2.lf)/2,
+                    (l1.hf + l2.hf)/2,
+                    60,
+                    l1.audio_file,
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    -1,
+                    l1.ravenfile,
+                )
+                negative_labels.append(negative_label)
+                negative_label = RavenLabel(
+                    l2.bt - 65,
+                    l2.bt - 5,
+                    (l1.lf + l2.lf)/2,
+                    (l1.hf + l2.hf)/2,
+                    60,
+                    l1.audio_file,
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    -1,
+                    l1.ravenfile,
+                )
+                negative_labels.append(negative_label)
+                continue
+
+        return negative_labels
+
 
 
 if this_should_be_a_unit_test:=False:
