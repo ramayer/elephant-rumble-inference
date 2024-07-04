@@ -40,7 +40,11 @@ This really wants a GPU.
 
 so about a 70x speedup on a GPU.
 
+## Windows instructions
 
+* I was only able to make this work using conda
+* conda install ffmpeg 
+* torchaudio StreamReaders use ffmpeg?
 
 # TODO
 

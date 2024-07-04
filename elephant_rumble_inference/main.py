@@ -23,6 +23,21 @@ if DEVICE == "cpu":
     )
     print("   Recommend running with --limit-audio-hours=1 when on CPU.")
 
+# Windows workarounds
+if os.name == 'nt':  # Check if running on Windows
+    # touch.hub.get_dir() returns a unix-like path
+    print("""########### ATTEMPTING WINDOWS WORKAROUNDS ########""")
+    cachedir = os.path.join(
+        os.path.expanduser("~"),
+        ".cache",
+        "torch",
+        "hub"
+    )
+    torch.hub.set_dir(cachedir)
+    print(torch.hub.get_dir())
+
+
+
 
 def parse_args():
 
@@ -54,7 +69,7 @@ def parse_args():
     parser.add_argument(
         "--save-dir",
         type=str,
-        default=os.path.join(tempfile.gettempdir(), "elephant-rumble-inference"),
+        default="outputs",
         help="directory to safe outputs",
     )
     parser.add_argument(
@@ -177,17 +192,6 @@ def get_windows_torch_hub_dir():
     home = os.path.expanduser("~")
     return os.path.join(home, ".cache", "torch", "hub")
 
-if os.name == 'nt':  # Check if running on Windows
-    # touch.hub.get_dir() returns a unix-like path
-    print("""########### ATTEMPTING WINDOWS WORKAROUNDS ########""")
-    cachedir = os.path.join(
-        os.path.expanduser("~"),
-        ".cache",
-        "torch",
-        "hub"
-    )
-    torch.hub.set_dir(cachedir)
-    print(torch.hub.get_dir())
 
 def main():
     args = parse_args()
@@ -242,6 +246,8 @@ def main():
                     dttm   = f"{hour:02}:{minute:02}:00"
                     vis_filename = f"{audio_file_without_path}_{dttm}.png"
                     vis_path = os.path.join(visualization_dir,vis_filename)
+                    if os.name == 'nt': # windows doesn't allow a filename to have an iso time in it?
+                        vis_path = os.path.join(visualization_dir,f"{audio_file_without_path}_{hour:02}_{minute:02}_00.png")
                     AudioFileVisualizer().visualize_audio_file_fragment(
                         f"{audio_file_without_path}, Starting at {dttm}, Classified by {erc.model_name}",
                         vis_path,
