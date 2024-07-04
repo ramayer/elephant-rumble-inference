@@ -12,6 +12,7 @@ torchaudio = ">=2.3.0" # Google Colab's better off without this dependency just 
 librosa = ">=0.10.0" # Google colab already has a better version; this automatically gest scipy and numpy
 matplotlib = ">=3.9.0"
 duckdb = ">=0.10.0"
+numpy = "<2.0"  # wave2vec conflict with 2.0
 
 [build-system]
 requires = ["poetry-core"]

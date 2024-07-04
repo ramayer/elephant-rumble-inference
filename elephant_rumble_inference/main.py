@@ -99,7 +99,8 @@ def initialize_models():
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
-    model_name = "elephant_rumble_classifier_500_192_2024-07-03T01:27:40.424353_from_train_folder_valloss=5.55.pth"
+    # model_name = "elephant_rumble_classifier_500_192_2024-07-03T01:27:40.424353_from_train_folder_valloss=5.55.pth"
+    model_name = "best.pth" # windows likes short names
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
     erc.load_pretrained_weights(model_name)
@@ -178,6 +179,7 @@ def get_windows_torch_hub_dir():
 
 if os.name == 'nt':  # Check if running on Windows
     # touch.hub.get_dir() returns a unix-like path
+    print("""########### ATTEMPTING WINDOWS WORKAROUNDS ########""")
     cachedir = os.path.join(
         os.path.expanduser("~"),
         ".cache",
