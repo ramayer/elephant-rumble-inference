@@ -171,6 +171,22 @@ def choose_save_locations(args, audio_file):
     return score_file, raven_file, visualization_dir
 
 
+
+def get_windows_torch_hub_dir():
+    home = os.path.expanduser("~")
+    return os.path.join(home, ".cache", "torch", "hub")
+
+if os.name == 'nt':  # Check if running on Windows
+    # touch.hub.get_dir() returns a unix-like path
+    cachedir = os.path.join(
+        os.path.expanduser("~"),
+        ".cache",
+        "torch",
+        "hub"
+    )
+    torch.hub.set_dir(cachedir)
+    print(torch.hub.get_dir())
+
 def main():
     args = parse_args()
     print(f"Model: {args.model}")

@@ -31,7 +31,7 @@ class AvesTorchaudioWrapper(torch.nn.Module):
         return self.model.extract_features(sig)[0][-1]
 
     def get_cache_prefix(self):
-        cache_prefix = torch.hub._get_torch_home()
+        cache_prefix = torch.hub.get_dir()
         cache_dir = os.path.join(cache_prefix, "fruitpunch_elephants")
         return cache_dir
 

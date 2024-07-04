@@ -8,7 +8,10 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.10"
 einops = ">=0.8.0"
-# torchaudio = ">=2.3.0" # just makes google colab slow
+torchaudio = ">=2.3.0" # Google Colab's better off without this dependency just makes google colab slow
+librosa = ">=0.10.0" # Google colab already has a better version; this automatically gest scipy and numpy
+matplotlib = ">=3.9.0"
+duckdb = ">=0.10.0"
 
 [build-system]
 requires = ["poetry-core"]

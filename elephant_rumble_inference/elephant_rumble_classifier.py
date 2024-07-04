@@ -26,7 +26,7 @@ class ElephantRumbleClassifier(nn.Module):
         return x
 
     def get_cache_prefix(self):
-        cache_prefix = torch.hub._get_torch_home()
+        cache_prefix = torch.hub.get_dir()
         cache_dir = os.path.join(cache_prefix, "fruitpunch_elephants")
         return cache_dir
 
