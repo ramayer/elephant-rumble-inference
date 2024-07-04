@@ -53,10 +53,10 @@ class AudioFileVisualizer:
         similarity = similarity_scoresz[start_index:end_index].clone()
         dissimilarity = dissimilarity_scoresz[start_index:end_index].clone()
 
-        n_fft = 1024
+        n_fft = 1024*4*4
         hop_length = n_fft//4
         duration = end_time-start_time
-        audio,sr = librosa.load(audio_file,sr=1000,offset=start_time,duration=end_time-start_time)
+        audio,sr = librosa.load(audio_file,sr=1000*4*4,offset=start_time,duration=end_time-start_time)
         actual_duration = audio.shape[0] / sr
         print(f"  loaded audio in {time.time()-t0}")
         print(f"  duration","intended=",duration,"actual=",actual_duration)
@@ -69,7 +69,7 @@ class AudioFileVisualizer:
         print(f"  did stft in {time.time()-t0}")
 
         #np_spectral_power = spec.numpy(force=True) # if you used the torchaudio stft
-        if try_per_channel_normalization_on_power := True:
+        if try_per_channel_normalization_on_power := False:
             # Qualitatively, dividing by the median power seems better than subtracting the median power.
             median_pwr_per_spectral_band  = np.median(np_spectral_power, axis=1)
             normalized_pwr = np_spectral_power / median_pwr_per_spectral_band[:, None]
@@ -77,7 +77,7 @@ class AudioFileVisualizer:
         else:
             power_in_region_of_interest = np_spectral_power
 
-        if clip_outliers := True:
+        if clip_outliers := False:
             #db = db - np.max(db)
             #print("db shape",np_spectral_power.shape)
             noise_floor =  np.percentile(np_spectral_power,0)

@@ -25,6 +25,8 @@ class AudioFileProcessor:
 
     def get_aves_embeddings(self, chunk):
         with torch.inference_mode():
+            chunk = chunk[:,0:1]  # remove stereo or surround channels
+            print("in get_aves_embeddngs",chunk.shape)
             y32 = chunk.to(torch.float32).view(1, chunk.shape[0]).to(self.device)
             aves_embeddings = self.aves_model.forward(y32).to("cpu").detach()
             if torch.cuda.is_available():
