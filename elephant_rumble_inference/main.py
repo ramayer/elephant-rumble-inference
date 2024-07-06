@@ -206,6 +206,10 @@ def main():
             args, audio_file
         )
         print(score_file, raven_file, visualization_dir)
+        if raven_file and os.path.exists(raven_file):
+            print(f"skipping {raven_file} -- already exists")
+            print(f"(delete {raven_file} if you want to re-process it")
+            continue
 
         t0 = time.time()
         scores = classify_audio_file(
@@ -257,8 +261,8 @@ def main():
                         afp,
                         start_time=interesting_time,
                         end_time=interesting_time+visualization_duration_secs,
-                        width=1920/100 * 3 * visualization_duration_min // 15,
-                        height=1080/100,
+                        width=1920/100/2 * 1.5 * 3 * visualization_duration_min // 15,
+                        height=1080/100/2/2,
                         colormap="clean",
                         labels=lbls,
                     )

@@ -26,7 +26,10 @@ class AudioFileProcessor:
     def get_aves_embeddings(self, chunk):
         with torch.inference_mode():
             chunk = chunk[:,0:1]  # remove stereo or surround channels
-            print("in get_aves_embeddngs",chunk.shape)
+            #print("in get_aves_embeddngs",chunk.shape)
+            if chunk.shape[0] < 320*2:
+                print("Warning - two few audio samples to classify in chunk")
+                return torch.empty(0, 768)
             y32 = chunk.to(torch.float32).view(1, chunk.shape[0]).to(self.device)
             aves_embeddings = self.aves_model.forward(y32).to("cpu").detach()
             if torch.cuda.is_available():
@@ -35,6 +38,7 @@ class AudioFileProcessor:
             reshaped_tensor = einops.rearrange(
                 aves_embeddings, "1 n d -> n d"
             )  # remove that batch dimension
+            #print("reshaped tensor shape is",reshaped_tensor.shape)
             return reshaped_tensor.to("cpu").detach()
 
     def classify_wave_file_for_rumbles(self, wav_file_path, limit_audio_hours=24 ):
@@ -58,8 +62,15 @@ class AudioFileProcessor:
                     ##      )
                     ## TODO: Better to save the final 320 samples from the previous frame
                     ## and prepend it to the new frame.
+                    ##
+                    ##  Even better -- save many samples from the previous frame to re-set the state of the
+                    ##  transformer's attention blocks that look back in time.
+                    ##
                     results.append(rumble_classification)
                     results.append(rumble_classification[-2:-1,:])
                     if idx+1 >= limit_audio_hours:  # for unit testing
                         break
+        if len(results) == 0:
+            print(f"Warning - two few audio samples to classify in {wav_file_path}")
+            return torch.empty(0,768)
         return torch.cat(results)

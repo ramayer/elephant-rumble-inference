@@ -33,6 +33,8 @@ class RavenFileHelper:
             self.identify_useful_files()
 
     def find_continuous_segments(self, boolean_tensor):
+        if boolean_tensor.shape[0] == 0:
+            return []
         sign_changes = torch.cat(
             [
                 torch.tensor([True]),

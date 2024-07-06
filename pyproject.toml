@@ -20,4 +20,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 elephant-rumble-inference = "elephant_rumble_inference.main:main"
-
+elephant-rumble-test-data-downloader = "elephant_rumble_inference.test_data_downloader:download_test_data"
+ 
