@@ -188,7 +188,7 @@ class RavenFileHelper:
             for idx, row in enumerate(labels):
                 #row = RavenLabel(*row)
                 data = [
-                    idx,
+                    idx+1,
                     "Spectrogram 1", # "View",
                     "01", # "Channel",
                     row.bt, # "Begin Time (s)",
