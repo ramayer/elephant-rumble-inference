@@ -37,7 +37,8 @@ elephant-rumble-inference \
     ./data/Rumble/Test/*/*.wav
 ```
 
-The [Training Notebook that generated the higest scoring model so far can be seen here](https://github.com/ramayer/elephant-rumble-inference/blob/main/notebooks/training_notebook.ipynb).
+Example [Google Colab inference notebook here](https://colab.research.google.com/gist/ramayer/efdeb0f90184115aba756b023beedc5f/elephant_inference_test.ipynb).  The [Training Notebook that generated the higest scoring model so far can be seen here](https://github.com/ramayer/elephant-rumble-inference/blob/main/notebooks/training_notebook.ipynb).
+
 
 More detailed usage examples below.
 
@@ -138,9 +139,6 @@ Many of the wrong guesses seem to be related to:
 If the Raven File thinks a rumble starts ends 2/3 of a second sooner than this classifier, that difference in overlap counts as a false negative and a false positive.
 * Some unusual background noises that I didn't yet add to the manual "negative" classes.  If it's "animal-like", AVES may consider it "more elephant-like than not" unless I provide the companion model appropriate negative training samples.
 
-
-
-
 Could I set up some time to have someone code-review my code?
 I'm hoping I'm doing this evaluation fairly.   The notebook with the entire training run that produced this particular model can be found here:
 https://github.com/ramayer/elephant-rumble-inference/blob/main/notebooks/training_notebook.ipynb (edited) 
@@ -163,6 +161,11 @@ This has not been tested on a GPU with less than 6GB of RAM.
 * I was only able to make this work using conda
 * conda install ffmpeg (seems torchaudio StreamReaders use ffmpeg)?
 
+## MacOS Instructions. 
+
+As per: https://pytorch.org/audio/stable/installation.html "TorchAudio official binary distributions are compatible with FFmpeg version 6, 5 and 4. (>=4.4, <7)." -- so it specifically needs an older version of ffmpeg.
+
+I needed to `brew install ffmpeg@6` for it to run properly
 
 ## Detailed usage instructions
 
