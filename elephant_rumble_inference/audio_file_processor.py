@@ -2,6 +2,7 @@
 import einops
 import torch
 import torchaudio.io as tai
+from .triple_buffered_iterator import TripleBufferedIterator
 
 class AudioFileProcessor:
     def __init__(self, aves_model, elephant_model, rumble_sr=500, device="cuda"):
@@ -49,27 +50,49 @@ class AudioFileProcessor:
             frames_per_chunk=self.rumble_sr * 60 * 60,
         )
         results = []
-        for idx, (chunk,) in enumerate(streamer.stream()):
+        for idx, (prv,cur,nxt) in enumerate(TripleBufferedIterator(streamer.stream())):
+            (chunk,) = cur
             if chunk is not None:
+
+                # Note - if an hour at a 512Hz framerate has 1800000, samples 
+                # we expect 5625 AVES/Hubert embeddings, each representing 0.625 seconds.
+
                 with torch.inference_mode():  # torch.no_grad():
-                    print(f"Classifying hour {idx} of {wav_file_path}")
-                    aves_embeddings = self.get_aves_embeddings(chunk)
+                    if chunk.shape[0] % 320 != 0:
+                        print("""
+                              Warning - AVES/Hubert uses 320 sample convolutional layers; 
+                              the last embedding vector may be based on incomplete information.
+                              """)
+                    preroll = torch.empty(0,1)
+                    postroll = torch.empty(0,1)
+                    if nxt is not None:
+                        postroll = nxt[0][0:320*16] # 8 is not enough
+                    if prv is not None and prv[0].shape[0] >= 320*16:
+                        preroll = prv[0][-320*16:]
+                    print(f"Classifying hour {idx} of {wav_file_path} {preroll.shape}, {chunk.shape}, {postroll.shape}")
+
+                    chunk_for_aves = torch.concat([preroll,chunk,postroll])
+                    aves_embeddings = self.get_aves_embeddings(chunk_for_aves)
                     aves_embeddings = self.normalize_aves_embeddings(aves_embeddings) # to compare with cosine similiary
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
-                    ##print("ERROR!!!  {rumble_classification.shape} does not seem to equal an hour",
-                    ##      "Need to pad or interpolate or replay fragments of the previous hour???",
-                    ##      "Or pick a multiple of 320 for the frames per chunk?",
-                    ##      )
-                    ## TODO: Better to save the final 320 samples from the previous frame
-                    ## and prepend it to the new frame.
-                    ##
-                    ##  Even better -- save many samples from the previous frame to re-set the state of the
-                    ##  transformer's attention blocks that look back in time.
-                    ##
+                    print(idx,"rumble classification shape",rumble_classification.shape)
+
+                    end_of_preroll = preroll.shape[0] // 320
+                    beg_of_postroll = (preroll.shape[0] + chunk.shape[0])//320 # + 1
+
+                    print("Trimming",end_of_preroll, beg_of_postroll)
+                    rumble_classification = rumble_classification[end_of_preroll:beg_of_postroll]
+                    print("###########",rumble_classification.shape)
+
                     results.append(rumble_classification)
-                    results.append(rumble_classification[-2:-1,:])
+                    if nxt is None:
+                        # if there's no postroll, AVES doesn't return the last sample.
+                        results.append(rumble_classification[-2:-1,:])
                     if idx+1 >= limit_audio_hours:  # for unit testing
                         break
+        for idx,r in enumerate(results):
+            print("concatenating",idx,r.shape)
+
         if len(results) == 0:
             print(f"Warning - two few audio samples to classify in {wav_file_path}")
             return torch.empty(0,768)

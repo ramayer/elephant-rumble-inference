@@ -36,9 +36,6 @@ if os.name == 'nt':  # Check if running on Windows
     torch.hub.set_dir(cachedir)
     print(torch.hub.get_dir())
 
-
-
-
 def parse_args():
 
     usage = r"""Usage:
@@ -235,7 +232,7 @@ def main():
 
             rfh = RavenFileHelper()
             continuous_segments = rfh.find_continuous_segments(scores[:, 1] - scores[:, 0] > 0)
-            long_enough_segments = rfh.find_long_enough_segments(continuous_segments, n=5)
+            long_enough_segments = rfh.find_long_enough_segments(continuous_segments, n=3)
             interesting_seconds = [afp.score_index_to_time(bt) for bt,et in long_enough_segments]
             from collections import Counter
             # 5 minute spectrograms are easier to handle than hour long ones.
@@ -261,8 +258,8 @@ def main():
                         afp,
                         start_time=interesting_time,
                         end_time=interesting_time+visualization_duration_secs,
-                        width=1920/100/2 * 1.5 * 3 * visualization_duration_min // 15,
-                        height=1080/100/2/2,
+                        width = 4 * visualization_duration_min,
+                        height = 4,
                         colormap="clean",
                         labels=lbls,
                     )
