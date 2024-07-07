@@ -67,7 +67,7 @@ def parse_args():
         "--save-dir",
         type=str,
         default="outputs",
-        help="directory to safe outputs",
+        help="directory to save outputs",
     )
     parser.add_argument(
         "--visualizations-per-audio-file",
@@ -192,7 +192,6 @@ def get_windows_torch_hub_dir():
 
 def main():
     args = parse_args()
-    print(f"Model: {args.model}")
     print(f"Input files: {args.input_files}")
     atw, erc = initialize_models()
     afp = AudioFileProcessor(atw, erc, device=DEVICE)

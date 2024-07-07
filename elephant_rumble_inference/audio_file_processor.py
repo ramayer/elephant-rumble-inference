@@ -75,14 +75,14 @@ class AudioFileProcessor:
                     aves_embeddings = self.get_aves_embeddings(chunk_for_aves)
                     aves_embeddings = self.normalize_aves_embeddings(aves_embeddings) # to compare with cosine similiary
                     rumble_classification = self.elephant_model.forward(aves_embeddings)
-                    print(idx,"rumble classification shape",rumble_classification.shape)
+                    #print(idx,"rumble classification shape",rumble_classification.shape)
 
                     end_of_preroll = preroll.shape[0] // 320
                     beg_of_postroll = (preroll.shape[0] + chunk.shape[0])//320 # + 1
 
-                    print("Trimming",end_of_preroll, beg_of_postroll)
+                    #print("Trimming",end_of_preroll, beg_of_postroll)
                     rumble_classification = rumble_classification[end_of_preroll:beg_of_postroll]
-                    print("###########",rumble_classification.shape)
+                    #print("###########",rumble_classification.shape)
 
                     results.append(rumble_classification)
                     if nxt is None:
@@ -90,8 +90,6 @@ class AudioFileProcessor:
                         results.append(rumble_classification[-2:-1,:])
                     if idx+1 >= limit_audio_hours:  # for unit testing
                         break
-        for idx,r in enumerate(results):
-            print("concatenating",idx,r.shape)
 
         if len(results) == 0:
             print(f"Warning - two few audio samples to classify in {wav_file_path}")

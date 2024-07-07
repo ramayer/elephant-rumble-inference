@@ -27,14 +27,13 @@ Challenging because:
 ## Usage
 
 ```
-pip install git+https://github.com/ramayer/elephant-rumble-inference@v0.2.1
+pip install git+https://github.com/ramayer/elephant-rumble-inference@v0.3.0
 ```
 
 ```
 elephant-rumble-inference \
     --save-raven \
     --visualizations-per-audio-file=10 \
-    --save-dir /tmp/classified_audio \
     ./data/Rumble/Test/*/*.wav
 ```
 
