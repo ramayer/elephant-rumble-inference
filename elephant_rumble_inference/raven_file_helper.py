@@ -183,7 +183,7 @@ class RavenFileHelper:
         ]
 
         with open(output_filename, "w") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, delimiter='\t')
             writer.writerow(raven_file_columns)
             for idx, row in enumerate(labels):
                 #row = RavenLabel(*row)
