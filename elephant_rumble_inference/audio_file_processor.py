@@ -24,9 +24,11 @@ class AudioFileProcessor:
             unit_vecs = embs / norms
             return unit_vecs.to('cpu').detach()
 
+    def make_single_channel(self, chunk):
+        return chunk[:,0:1]  # remove stereo or surround channels
+
     def get_aves_embeddings(self, chunk):
         with torch.inference_mode():
-            chunk = chunk[:,0:1]  # remove stereo or surround channels
             #print("in get_aves_embeddngs",chunk.shape)
             if chunk.shape[0] < 320*2:
                 print("Warning - two few audio samples to classify in chunk")
@@ -53,6 +55,7 @@ class AudioFileProcessor:
         for idx, (prv,cur,nxt) in enumerate(TripleBufferedIterator(streamer.stream())):
             (chunk,) = cur
             if chunk is not None:
+                chunk = self.make_single_channel(chunk)
 
                 # Note - if an hour at a 512Hz framerate has 1800000, samples 
                 # we expect 5625 AVES/Hubert embeddings, each representing 0.625 seconds.
@@ -66,9 +69,9 @@ class AudioFileProcessor:
                     preroll = torch.empty(0,1)
                     postroll = torch.empty(0,1)
                     if nxt is not None:
-                        postroll = nxt[0][0:320*16] # 8 is not enough
+                        postroll = self.make_single_channel(nxt[0][0:320*16]) # 8 is not enough
                     if prv is not None and prv[0].shape[0] >= 320*16:
-                        preroll = prv[0][-320*16:]
+                        preroll = self.make_single_channel(prv[0][-320*16:])
                     print(f"Classifying hour {idx} of {wav_file_path} {preroll.shape}, {chunk.shape}, {postroll.shape}")
 
                     chunk_for_aves = torch.concat([preroll,chunk,postroll])
