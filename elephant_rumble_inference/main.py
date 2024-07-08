@@ -38,45 +38,41 @@ if os.name == 'nt':  # Check if running on Windows
 
 def parse_args():
 
-    usage = r"""Usage:
+    usage = r"""
 
         elephant-rumble-inference --save-raven data/*.wav 
 
         elephant-rumble-inference \
-            --save-raven --save-scores \
+            --visualizations-per-audio-file=5 --duration-of-visualizaton=60 \
             --load-labels ~/proj/elephantlistening/data/Rumble \
-            --save-dir ~/proj/elephantlistening/tmp/aves/2024-06-01 \
-            --visualizations-per-audio-file=5 --visualization-duration=60 \
+            --save-dir /tmp \
             ~/proj/elephantlistening/data/Rumble/Training/Sounds/*.wav 
 
         elephant-rumble-inference --help
 
-        -- nice unlabeled rumbles at
-            nn03a_20201020_000100.wav at 10:24:00
-            nn02d_202001013_000100.wav 06:25:00
-
-            Interesting soundd at CEB1_20111017_00000.wav at 00:20:00
-            Same sound at CEB1_20120715_0000.wav also at 00:20:00
     """
     parser = argparse.ArgumentParser(
-        description="Find elephant rumbles in an audio clip", usage=usage
+        description="Find elephant rumbles in an audio clip", 
+        usage=usage,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+
     )
     parser.add_argument("--model", type=str, help="Specify the model name")
     parser.add_argument("input_files", nargs="*", help="List of input files")
     parser.add_argument(
-        "--save-dir",
+        "-o", "--save-dir",
         type=str,
-        default="outputs",
+        default="output",
         help="directory to save outputs",
     )
     parser.add_argument(
-        "--visualizations-per-audio-file",
+        "-v", "--visualizations-per-audio-file",
         type=int,
         default=0,
         help="visualiztions are slow so be patient if you pick more than 1",
     )
     parser.add_argument(
-        "--visualization-duration",
+        "-d", "--duration-of-visualizations",
         type=int,
         default=15,
         help="Minutes of audio for a visualization. 15 is nice for wide monitor, 60 is interesting if you don't mind horizontal scrolling",
@@ -87,12 +83,12 @@ def parse_args():
         help="Save classification scores to a file",
     )
     parser.add_argument(
-        "--save-raven",
+        "-r", "--save-raven",
         action="store_true",
         help="Save a raven file with found labels",
     )
     parser.add_argument(
-        "--load-labels-from-raven-file-folder",
+        "-l", "--load-labels-from-raven-file-folder",
         type=str,
         help="show labels from existing raven files",
     )
@@ -100,9 +96,12 @@ def parse_args():
         "--limit-audio-hours",
         type=int,
         default=24,
-        help="Limit audio hours (default: 24) (Recommend setting to 1 for CPU).",
+        help="Limit audio hours (Recommend setting to 1 for CPU).",
     )
     args = parser.parse_args()
+
+    if len(args.input_files) == 0:
+        print("Need at least one audio file.\n\n\n",usage)
     return args
 
 
@@ -219,8 +218,8 @@ def main():
         t2 = time.time()
 
         if visualization_dir:
-            visualization_duration_min  = args.visualization_duration
-            visualization_duration_secs = args.visualization_duration * 60
+            duration_of_visualizations_min  = args.duration_of_visualizations
+            duration_of_visualizations_secs = args.duration_of_visualizations * 60
 
             print("Rendering visualizations...")
             if args.load_labels_from_raven_file_folder:
@@ -235,7 +234,7 @@ def main():
             interesting_seconds = [afp.score_index_to_time(bt) for bt,et in long_enough_segments]
             from collections import Counter
             # 5 minute spectrograms are easier to handle than hour long ones.
-            interesting_times = Counter([int(sec/visualization_duration_secs)*visualization_duration_secs for sec in interesting_seconds])
+            interesting_times = Counter([int(sec/duration_of_visualizations_secs)*duration_of_visualizations_secs for sec in interesting_seconds])
             for element, count in interesting_times.most_common():
                 print(f"{element}: {count}")
             num_vis =0
@@ -256,8 +255,8 @@ def main():
                         scores[:, 0],
                         afp,
                         start_time=interesting_time,
-                        end_time=interesting_time+visualization_duration_secs,
-                        width = 4 * visualization_duration_min,
+                        end_time=interesting_time+duration_of_visualizations_secs,
+                        width = 4 * duration_of_visualizations_min,
                         height = 4,
                         colormap="clean",
                         labels=lbls,

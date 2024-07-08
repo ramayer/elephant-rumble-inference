@@ -3,8 +3,7 @@
 
 * An AVES/HuBERT transformer based Elephant Rumble Detector for the [FruitPunch AI "AI For Forest Elephants"](https://app.fruitpunch.ai/challenge/ai-for-forest-elephants-2) project. 
 
-* When trained and tested on the dataset [The Cornell Lab's Elephant Listening Project](https://www.elephantlisteningproject.org/) provided FruiltPunch, it scores well.
-  *  f1-scores, precision, recall, and accuracy all in the high 90%s (details below).
+* When trained and tested on the dataset [The Cornell Lab's Elephant Listening Project](https://www.elephantlisteningproject.org/) provided FruitPunch, it scores well. (f1-scores, precision, recall, and accuracy all in the high 90%s -- details below).
 
 
 
@@ -28,17 +27,19 @@ Challenging because:
 
 ```
 pip install git+https://github.com/ramayer/elephant-rumble-inference@v0.3.0
+elephant-rumble-inference --save-raven --visualizations-per-audio-file=10 test.wav
 ```
 
-```
-elephant-rumble-inference \
-    --save-raven \
-    --visualizations-per-audio-file=10 \
-    ./data/Rumble/Test/*/*.wav
-```
 
-Example [Google Colab inference notebook here](https://colab.research.google.com/gist/ramayer/efdeb0f90184115aba756b023beedc5f/elephant_inference_test.ipynb).  The [Training Notebook that generated the higest scoring model so far can be seen here](https://github.com/ramayer/elephant-rumble-inference/blob/main/notebooks/training_notebook.ipynb).
+Installation note:
+* TorchAudio has a dependency on ffmpeg versions below 7 according to [torchaudio docs](https://pytorch.org/audio/2.1/installation.html#optional-dependencies).
+  * On MacOS, you can get that using  `brew install ffmpeg@6`. 
+  * On Windows, someone reported luck with `conda install -c conda-forge 'ffmpeg<7'`.
 
+Example Notebooks:
+
+* [A Google Colab notebook demoing the command line tool here](https://colab.research.google.com/gist/ramayer/efdeb0f90184115aba756b023beedc5f/elephant_inference_test.ipynb).  
+* [The Training Notebook that generated the highest scoring model so far can be seen here](https://github.com/ramayer/elephant-rumble-inference/blob/main/notebooks/training_notebook.ipynb).
 
 More detailed usage examples below.
 
@@ -64,13 +65,16 @@ animals of interest.
 * AVES is great at creating clusters of similar biological sounds
 * But doesn’t know which clusters go with which animals.
 * Visualizing AVES embeddings shows this is a promising approach.
+<p align="center"><a href="https://0ape.com/elephants/nice_umap_visualization.html">
+<img src="./docs/assets/umap_visualization_of_AVES_embeddings.png" width="400" >
+</a></p>
 
-The image below shows a [UMAP](https://pair-code.github.io/understanding-umap/) visualization of AVES embeddings of our data:
+The image above shows a [UMAP](https://pair-code.github.io/understanding-umap/) visualization of AVES embeddings of our data:
 
 * Red = elephants in our labeled data.
 * Blue = non-elephant sound clips from the same .wav files.
+* (larger, interactive version [here](https://0ape.com/elephants/nice_umap_visualization.html))    
 
-![Umap visualization of elephant sounds vs negative test cases](docs/assets/umap_visualization_of_AVES_embeddings.png "")
 
 Observe that there are multiple distinct clusters.   Listening to the sounds associated with each cluster suggests:
 
@@ -92,19 +96,14 @@ While it's likely a simpler [Support Vector Machine](https://x.com/karpathy/stat
 
 
 ### Challenges.
-* Challenge 1 - AVES didn’t have our frequencies or timescales in mind:
+* Challenge - AVES didn’t have our frequencies or timescales in mind:
   * AVES seems easily distracted by high pitched animals in the background noise.
 HuBERT - designed to recognize syllables in speech - generates feature vectors at a 20ms timescale - which would be expensive on our 24-hour-long clips.
 
-* Solution 1 - resample and pitch-shift through re-tagging.
-Re-sample and re-tag our audio to pretend 1kHz is 16kHz
-    *  (thx for this technique, Arnoud)
-  * By a happy coincidence this helps with both problems.
-  * Pitch-shifts up the audio up by 4 octaves
-Shifts a 20 - 200 Hz elephant rumble to 320-3200Hz 
-And pushes a 2kHz bird to 32kHz where it’s largely ignored by the model.
-  * Turns a ½ second elephant-rumble-syllable to 31ms (~ HuBERT’s timescale)
-  * Reduces compute by a factor of 16.
+* Solution - resample and pitch-shift through re-tagging the sample rate.
+  * Upshifting the audio by 3-4 octaves shifts Elephant Rumbles into human hearing ranges, where most audio software operates best.
+  * Speeding the audio turns a ½ second elephant-rumble-syllable to 31ms (~ HuBERT’s timescale)
+  * Speeding up the audio by 16x and upshiftign 4 octaves reduces compute by a factor of 16.
 
 And as a side-effect, it shifts elephant speech into human hearing ranges, and they sound awesome!!!
 
@@ -159,13 +158,13 @@ This has not been tested on a GPU with less than 6GB of RAM.
 ## Windows instructions
 
 * I was only able to make this work using conda
-* conda install ffmpeg (seems torchaudio StreamReaders use ffmpeg)?
+* On Windows, someone reported luck with `conda install -c conda-forge 'ffmpeg<7'`.
+* Documentation may assume linux-like paths and examples may need to be adjusted
 
 ## MacOS Instructions. 
 
-As per: https://pytorch.org/audio/stable/installation.html "TorchAudio official binary distributions are compatible with FFmpeg version 6, 5 and 4. (>=4.4, <7)." -- so it specifically needs an older version of ffmpeg.
-
-I needed to `brew install ffmpeg@6` for it to run properly
+* As per: https://pytorch.org/audio/stable/installation.html "TorchAudio official binary distributions are compatible with FFmpeg version 6, 5 and 4. (>=4.4, <7)." -- so it specifically needs an older version of ffmpeg.
+* I needed to `brew install ffmpeg@6` for it to run properly
 
 ## Detailed usage instructions
 
@@ -179,4 +178,5 @@ I needed to `brew install ffmpeg@6` for it to run properly
 
 # Future work
 
+   * Certain audio files not in the Test dataset had curious sounds in the background (bugs? different airplanes?) causing a lot of false postiives.  Add such examples to the training data as "not a rumble" and retrain to improve its performance on those files.
    * Despite performing well on the audio recorders in both this project's test and train datasets, the version of the model pretrained performs poorly in environments with different background noises like [these South African elephant recordings](https://www.youtube.com/watch?v=3yldufeCt-I).    It regains its performance by re-training with negative "not an elephant" exampes of background noise from these other regions.   Training a version with more diverse not-elephant sounds would produce a more robust version.

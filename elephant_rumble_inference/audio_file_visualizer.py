@@ -70,7 +70,7 @@ class AudioFileVisualizer:
         #print(f"  did stft in {time.time()-t0}")
 
         #np_spectral_power = spec.numpy(force=True) # if you used the torchaudio stft
-        if try_per_channel_normalization_on_power := False:
+        if try_per_channel_normalization_on_power := True:
             # Qualitatively, dividing by the median power seems better than subtracting the median power.
             median_pwr_per_spectral_band  = np.median(np_spectral_power, axis=1)
             normalized_pwr = np_spectral_power / median_pwr_per_spectral_band[:, None]
