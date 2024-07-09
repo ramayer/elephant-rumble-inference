@@ -45,7 +45,8 @@ class AudioFileVisualizer:
                           height=1280/100,
                           width=1920/100,
                           colormap='raw',
-                          labels=[]
+                          labels=[],
+                          negative_labels=[]
                           ):
         import time
         t0 = time.time()
@@ -119,7 +120,12 @@ class AudioFileVisualizer:
         else:
             redness = stretched_dissimilarity.numpy()
             greenness = stretched_similarity.numpy()
-
+            if (redness.max()>1 or redness.min() < 0 or 
+                greenness.max()>1 or greenness.min() < 0):
+                redness -= redness.min()
+                redness /= redness.max()
+                greenness -= greenness.min()
+                greenness /= greenness.max()
             
         blueness = 1-(redness + greenness)
         blueness[blueness<0] = 0
@@ -154,7 +160,8 @@ class AudioFileVisualizer:
         # local_rfw.add_annotation_boxes(labels,start_time,duration,ax1,offset=.5,color=(0,1,0))
         # negative_lables = local_rfw.get_negative_labels(labels)
         # local_rfw.add_annotation_boxes(negative_lables,start_time,duration,ax1,offset=.5,color=(1,0,0))
-        self.add_annotation_boxes(labels,start_time,end_time,ax1,offset=0.5,color=(0,0,1))
+        self.add_annotation_boxes(labels,start_time,end_time,ax1,offset=0.5,color=(0,1,1))
+        self.add_annotation_boxes(negative_labels,start_time,end_time,ax1,offset=0.5,color=(0,0,1))
 
         #print("make sure similarity shape is compatible",s_db_rgb.shape, stretched_similarity.shape)
         fairseq_time = [i*actual_duration/similarity.shape[0] for i in range(similarity.shape[0])]

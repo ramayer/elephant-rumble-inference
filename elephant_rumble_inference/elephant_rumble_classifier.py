@@ -38,6 +38,10 @@ class ElephantRumbleClassifier(nn.Module):
         return model_name
 
     def load_pretrained_weights(self, model_name):
+        if os.path.exists(model_name):
+            self.load_state_dict(torch.load(model_name))
+            self.eval()
+            return
         if not model_name.endswith(".pth"):
             model_name = self.choose_model_weights(model_name)
             print(f"using {model_name}")

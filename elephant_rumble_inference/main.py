@@ -57,7 +57,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     )
-    parser.add_argument("--model", type=str, help="Specify the model name")
+    parser.add_argument("--model", type=str, help="Specify the model name. Recommended '2024(full list here: http://0ape.com/pretrained_models/ )")
     parser.add_argument("input_files", nargs="*", help="List of input files")
     parser.add_argument(
         "-o", "--save-dir",
@@ -70,6 +70,12 @@ def parse_args():
         type=int,
         default=0,
         help="visualiztions are slow so be patient if you pick more than 1",
+    )
+    parser.add_argument(
+        "-m", "--model-name",
+        type=str,
+        default='2024-07-03.pth',
+        help="Name of the model.  Recommended 2024-06-29.pth, 2024-06-30.pth, 2024-07-03.pth, or 2024-07-09.pth. Full list of available models here: http://0ape.com/pretrained_models/ )",
     )
     parser.add_argument(
         "-d", "--duration-of-visualizations",
@@ -105,13 +111,12 @@ def parse_args():
     return args
 
 
-def initialize_models():
-    model_name = "best_using_more_varied_training_data"
+def initialize_models(model_name):
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-29T22:51:14.720487_valloss=5.83.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:01:33.715741_valloss=6.76.pth'
     # model_name = 'elephant_rumble_classifier_500_192_2024-06-30T02:22:33.598037_valloss=6.55.pth'
     # model_name = "elephant_rumble_classifier_500_192_2024-07-03T01:27:40.424353_from_train_folder_valloss=5.55.pth"
-    model_name = "best.pth" # windows likes short names
+    # model_name = "best.pth" # windows likes short names
     atw = AvesTorchaudioWrapper().to(DEVICE)
     erc = ElephantRumbleClassifier().to("cpu")
     erc.load_pretrained_weights(model_name)
@@ -192,7 +197,7 @@ def get_windows_torch_hub_dir():
 def main():
     args = parse_args()
     print(f"Input files: {args.input_files}")
-    atw, erc = initialize_models()
+    atw, erc = initialize_models(args.model_name)
     afp = AudioFileProcessor(atw, erc, device=DEVICE)
     for audio_file in args.input_files:
         audio_file_without_path = os.path.basename(audio_file)
