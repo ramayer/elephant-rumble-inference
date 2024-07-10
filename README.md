@@ -6,7 +6,6 @@
 * When trained and tested on the dataset [The Cornell Lab's Elephant Listening Project](https://www.elephantlisteningproject.org/) provided FruitPunch, it scores well. (f1-scores, precision, recall, and accuracy all in the high 90%s -- details below).
 
 
-
 From Central African soundscapes like this ...
 
 ![Elephant rumbles in noise](docs/assets/elephant_rumbles_in_background_noise.png "Spectrogram of the original audio.")
@@ -180,3 +179,8 @@ This has not been tested on a GPU with less than 6GB of RAM.
 
    * Certain audio files not in the Test dataset had curious sounds in the background (bugs? different airplanes?) causing a lot of false postiives.  Add such examples to the training data as "not a rumble" and retrain to improve its performance on those files.
    * Despite performing well on the audio recorders in both this project's test and train datasets, the version of the model pretrained performs poorly in environments with different background noises like [these South African elephant recordings](https://www.youtube.com/watch?v=3yldufeCt-I).    It regains its performance by re-training with negative "not an elephant" exampes of background noise from these other regions.   Training a version with more diverse not-elephant sounds would produce a more robust version.
+
+## Bug fixes and feature requests
+
+* Please submit issues to https://github.com/ramayer/elephant-rumble-inference .  
+* Also availble on the FruitPunch Gitlab here: https://gitlab.com/fruitpunch/projects/ai-for-forest-elephants-2/modelling/ai-for-forest-elephant-2/-/tree/aves-based-models?ref_type=heads
