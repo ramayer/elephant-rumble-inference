@@ -26,8 +26,8 @@ Challenging because:
 ## Usage
 
 ```
-pip install git+https://github.com/ramayer/elephant-rumble-inference@v0.3.0
-elephant-rumble-inference --save-raven --visualizations-per-audio-file=10 test.wav
+pip install git+https://github.com/ramayer/elephant-rumble-inference@v0.9.0-rc1
+elephant-rumble-inference test.wav --visualizations=5 --save-raven *.wav
 ```
 
 

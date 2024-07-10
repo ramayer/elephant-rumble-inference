@@ -240,8 +240,8 @@ def main():
             from collections import Counter
             # 5 minute spectrograms are easier to handle than hour long ones.
             interesting_times = Counter([int(sec/duration_of_visualizations_secs)*duration_of_visualizations_secs for sec in interesting_seconds])
-            for element, count in interesting_times.most_common():
-                print(f"{element}: {count}")
+            #for element, count in interesting_times.most_common():
+            #    print(f"{element}: {count}")
             num_vis =0
             with torch.inference_mode():
                 for interesting_time, count in interesting_times.most_common():
