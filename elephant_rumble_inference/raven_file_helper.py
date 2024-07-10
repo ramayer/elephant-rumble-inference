@@ -396,7 +396,23 @@ class RavenFileHelper:
                     l1.ravenfile,
                 )
                 negative_labels.append(negative_label)
-                continue
+
+            if (l2.bt - l1.et > 130*2):
+                negative_label = RavenLabel(
+                    (l1.et + l2.bt)/2 - 60,
+                    (l1.et + l2.bt)/2 + 60,
+                    (l1.lf + l2.lf)/2,
+                    (l1.hf + l2.hf)/2,
+                    120,
+                    l1.audio_file,
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    "not a rumble",
+                    -1,
+                    l1.ravenfile,
+                )
+                negative_labels.append(negative_label)
 
         return negative_labels
 
