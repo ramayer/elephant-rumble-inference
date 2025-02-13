@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elephant-rumble-inference"
-version = "0.9.0rc1"
+version = "0.9.1rc2"
 description = "Model and python package to detect Elephant Rumbles in Audio"
 authors = ["Ron M <ramayer+git@gmail.com>"]
 readme = "README.md"
@@ -9,10 +9,10 @@ readme = "README.md"
 python = ">=3.10"
 einops = ">=0.8.0"
 torchaudio = ">=2.3.0" # Google Colab's better off without this dependency just makes google colab slow
-librosa = ">=0.10.0" # Google colab already has a better version; this automatically gest scipy and numpy
+librosa = ">=0.11.0rc0"
 matplotlib = ">=3.9.0"
 duckdb = ">=0.10.0"
-numpy = "<2.0"  # wave2vec conflict with 2.0
+numpy = ">=2.0"  # wave2vec conflict with 2.0
 
 [build-system]
 requires = ["poetry-core"]
